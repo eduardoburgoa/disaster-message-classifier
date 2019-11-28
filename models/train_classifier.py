@@ -1,24 +1,98 @@
 import sys
+# import libraries
+import pickle
+import re
+import pandas as pd
+import numpy as np
+import warnings
+warnings.filterwarnings('ignore')
 
+from functools import partial
+
+from sqlalchemy import create_engine
+
+import nltk
+nltk.download('punkt')
+nltk.download('wordnet')
+
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.metrics import classification_report
 
 def load_data(database_filepath):
-    pass
+    # load data from database
+    engine = create_engine('sqlite:///database_filepath')
+    df = pd.read_sql_table('InsertTableName', engine)
+    X = df['message']
+    Y = df[['related', 'request', 'offer',
+        'aid_related', 'medical_help', 'medical_products', 'search_and_rescue',
+        'security', 'military', 'child_alone', 'water', 'food', 'shelter',
+        'clothing', 'money', 'missing_people', 'refugees', 'death', 'other_aid',
+        'infrastructure_related', 'transport', 'buildings', 'electricity',
+        'tools', 'hospitals', 'shops', 'aid_centers', 'other_infrastructure',
+        'weather_related', 'floods', 'storm', 'fire', 'earthquake', 'cold',
+        'other_weather', 'direct_report']]
 
 
 def tokenize(text):
-    pass
+    url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+
+    detected_urls = re.findall(url_regex, text)
+    for url in detected_urls:
+        text = text.replace(url, "urlplaceholder")
+
+    tokens = word_tokenize(text)
+    lemmatizer = WordNetLemmatizer()
+
+    clean_tokens = []
+    for tok in tokens:
+        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
+        clean_tokens.append(clean_tok)
+
+    return clean_tokens
 
 
 def build_model():
-    pass
+    pipeline = Pipeline([
+        ('vect', CountVectorizer(tokenizer=partial(tokenize))),
+        ('tfidf', TfidfTransformer()),
+        ('clf', MultiOutputClassifier(RandomForestClassifier())),
+    ])
+
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.35, random_state=42)
+
+    #pipeline.fit(X_train, Y_train)
+
+    parameters = parameters = {
+        'tfidf__smooth_idf': [True, False],
+        'clf__estimator__bootstrap': [True, False]
+    }
+
+    model = GridSearchCV(pipeline, param_grid=parameters, n_jobs=4)
+    model.fit(X_train, Y_train)
+
+    return model
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    pass
+    Y_pred = model.predict(X_test)
+
+    i = 0
+    for column in category_names:
+        i += 1
+        print(column)
+        print(classification_report(Y_test[column], Y_pred[:, 1]))
 
 
 def save_model(model, model_filepath):
-    pass
+    with open(model_filepath, 'wb') as file:
+        pickle.dump(model, file)
 
 
 def main():

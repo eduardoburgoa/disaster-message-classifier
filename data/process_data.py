@@ -1,16 +1,41 @@
 import sys
-
+from sqlalchemy import create_engine
+import pandas as pd
 
 def load_data(messages_filepath, categories_filepath):
-    pass
-
+    messages = pd.read_csv(messages_filepath)
+    categories = pd.read_csv(categories_filepath)
+    df = messages.merge(categories, how='inner', on='id')
 
 def clean_data(df):
-    pass
+    df.categories.str.split(pat=';', expand=True)
+    # select the first row of the categories dataframe
+    row = categories.loc[0]
+
+    category_colnames = row.apply(lambda x : x.split('-')[0])
+    categories.columns = category_colnames
+
+    for column in categories:
+        # set each value to be the last character of the string
+        categories[column] = categories[column].apply(lambda x : x.split('-')[1])
+        
+        # convert column from string to numeric
+        categories[column] = categories[column].astype('int64')
+    for column in categories:
+        mask = (categories['related'] != 0) & (categories['related'] != 1)
+        categories.loc[mask, column] = int(categories[column].mode())
+
+    df.drop(columns='categories', inplace=True)
+    df = pd.concat([df, categories], axis=1)
+
+    df.drop_duplicates(inplace=True)
+
+    return df
 
 
 def save_data(df, database_filename):
-    pass  
+    engine = create_engine('sqlite:///%s' % database_filename)
+    df.to_sql('InsertTableName', engine, index=False)  
 
 
 def main():

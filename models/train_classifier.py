@@ -27,17 +27,19 @@ from sklearn.metrics import classification_report
 
 def load_data(database_filepath):
     # load data from database
-    engine = create_engine('sqlite:///database_filepath')
-    df = pd.read_sql_table('InsertTableName', engine)
-    X = df['message']
-    Y = df[['related', 'request', 'offer',
+    engine = create_engine('sqlite:///%s' % database_filepath)
+    df = pd.read_sql_table('Messages', engine)
+    category_names = ['related', 'request', 'offer',
         'aid_related', 'medical_help', 'medical_products', 'search_and_rescue',
         'security', 'military', 'child_alone', 'water', 'food', 'shelter',
         'clothing', 'money', 'missing_people', 'refugees', 'death', 'other_aid',
         'infrastructure_related', 'transport', 'buildings', 'electricity',
         'tools', 'hospitals', 'shops', 'aid_centers', 'other_infrastructure',
         'weather_related', 'floods', 'storm', 'fire', 'earthquake', 'cold',
-        'other_weather', 'direct_report']]
+        'other_weather', 'direct_report']
+    X = df['message']
+    Y = df[category_names]
+    return X, Y, category_names
 
 
 def tokenize(text):
@@ -65,17 +67,12 @@ def build_model():
         ('clf', MultiOutputClassifier(RandomForestClassifier())),
     ])
 
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.35, random_state=42)
-
-    #pipeline.fit(X_train, Y_train)
-
     parameters = parameters = {
         'tfidf__smooth_idf': [True, False],
         'clf__estimator__bootstrap': [True, False]
     }
 
-    model = GridSearchCV(pipeline, param_grid=parameters, n_jobs=4)
-    model.fit(X_train, Y_train)
+    model = GridSearchCV(pipeline, param_grid=parameters, n_jobs=8, verbose=2)
 
     return model
 

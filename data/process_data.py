@@ -6,9 +6,10 @@ def load_data(messages_filepath, categories_filepath):
     messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
     df = messages.merge(categories, how='inner', on='id')
+    return df
 
 def clean_data(df):
-    df.categories.str.split(pat=';', expand=True)
+    categories = df.categories.str.split(pat=';', expand=True)
     # select the first row of the categories dataframe
     row = categories.loc[0]
 
@@ -35,7 +36,7 @@ def clean_data(df):
 
 def save_data(df, database_filename):
     engine = create_engine('sqlite:///%s' % database_filename)
-    df.to_sql('InsertTableName', engine, index=False)  
+    df.to_sql('Messages', engine, index=False)  
 
 
 def main():

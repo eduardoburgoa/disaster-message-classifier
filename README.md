@@ -2,6 +2,8 @@
 
 ### Instructions:
 1. Run the following commands in the project's root directory to set up your database and model.
+    - Install libraries
+        `pip install -r`
 
     - To run ETL pipeline that cleans data and stores in database
         `python data/process_data.py data/disaster_messages.csv data/disaster_categories.csv data/DisasterResponse.db`

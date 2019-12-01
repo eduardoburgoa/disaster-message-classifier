@@ -32,19 +32,40 @@ df = pd.read_sql_table('Messages', engine)
 # load model
 model = joblib.load("../models/classifier.pkl")
 
-
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
 @app.route('/index')
 def index():
     
     # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
+    # Genre count visual
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
+
+    # Disaster message  count visual
+    dissaster_mask = df['related'] > 0
+
+    df['is_dissaster'] = 'No Dissaster'
+    df.loc[dissaster_mask, 'is_dissaster'] = 'Dissaster'
+
+    dissaster_counts = df.groupby('is_dissaster').count()['message']
+    dissaster_names = list(dissaster_counts.index)
     
+    # Kind of Dissaster response
+    category_list = [
+        'request', 'offer', 'aid_related', 'medical_help', 'medical_products', 
+        'search_and_rescue', 'security', 'military', 'child_alone', 'water', 
+        'food', 'shelter', 'clothing', 'money', 'missing_people', 'refugees', 
+        'death', 'other_aid', 'infrastructure_related', 'transport', 'buildings', 
+        'electricity', 'tools', 'hospitals', 'shops', 'aid_centers', 
+        'other_infrastructure', 'weather_related', 'floods', 'storm', 'fire', 
+        'earthquake', 'cold', 'other_weather', 'direct_report'
+        ]
+
+    category_counts = df[category_list].sum().sort_values(ascending=False)
+    category_names = list(category_counts.index)
+
     # create visuals
-    # TODO: Below is an example - modify to create your own visuals
     graphs = [
         {
             'data': [
@@ -61,6 +82,42 @@ def index():
                 },
                 'xaxis': {
                     'title': "Genre"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=dissaster_names,
+                    y=dissaster_counts
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of Messages by type (dissaster or not)',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Type of message"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=category_names,
+                    y=category_counts
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of dissaster messages by category',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Message category"
                 }
             }
         }

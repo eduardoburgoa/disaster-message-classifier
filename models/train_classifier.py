@@ -26,7 +26,17 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import classification_report
 
 def load_data(database_filepath):
-    # load data from database
+    """Load data from database.
+
+    Args:
+    database_filepath: string. The file path of the sqlite database to load.
+
+    Returns:
+    X: pandas Series.  Message series to be used as independent variable for a model.
+    Y: pandas DataFrame. Each row represents a message and each column represents the 
+    categories used to classify a message.
+    category_names: list. Complete list of column names used to classify each message.
+    """
     engine = create_engine('sqlite:///%s' % database_filepath)
     df = pd.read_sql_table('Messages', engine)
     category_names = ['related', 'request', 'offer',
@@ -43,6 +53,14 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
+    """Split, lemmatize and clean text returning a list of tokens.
+    
+    Args:
+    text: string. The complete text to be tokenized.
+
+    Returns:
+    clean_tokens: list. Clean tokens ready to be used for the next step in the nltk pipeline.
+    """
     tokens = word_tokenize(text)
     lemmatizer = WordNetLemmatizer()
 
@@ -55,6 +73,14 @@ def tokenize(text):
 
 
 def build_model():
+    """Creates the machine learning pipeline.
+    
+    Args: None.
+
+    Returns:
+    model: Pipeline. Pipeline for transform (CountVectorizer and TfidfTransformer) and 
+    classify (MultiOutputClassifier).
+    """
     pipeline = Pipeline([
         ('vect', CountVectorizer(tokenizer=partial(tokenize))),
         ('tfidf', TfidfTransformer()),
@@ -72,6 +98,17 @@ def build_model():
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    """Evaluates the machine learning model and prints a report with the results.
+    
+    Args:
+    model: Pipeline. The model/pipeline to be evaluated.
+    X_test: pandas Series. Message series to be used as independent variable to test the model.
+    Y_test: pandas DataFrame. The category classification of the messages to tests the model. 
+    Each row represents a message and each column represents the categories used to classify a message.
+    category_names:
+    
+    Returns: None
+    """
     Y_pred = model.predict(X_test)
 
     i = 0
@@ -82,6 +119,14 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
 
 def save_model(model, model_filepath):
+    """Saves the pipeline to a pickle file.
+    
+    Args:
+    model: Pipeline. The pipeline to be saved.
+    model_filepath: string. The path where the pickle file will be saved.
+    
+    Returns: None
+    """
     with open(model_filepath, 'wb') as file:
         pickle.dump(model, file)
 

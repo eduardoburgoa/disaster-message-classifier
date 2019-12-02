@@ -3,12 +3,32 @@ from sqlalchemy import create_engine
 import pandas as pd
 
 def load_data(messages_filepath, categories_filepath):
+    """Loads message and categories data from csv files.
+
+    Args:
+    messages_filepath: string. The path of the csv file to load messages.
+    categories_filepath: string. The path of the csv file to load categories.
+
+    Returns:
+    df: pandas DataFrame.  Includes all the messages and their categories before cleaning.
+    """
     messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
     df = messages.merge(categories, how='inner', on='id')
     return df
 
 def clean_data(df):
+    """Cleans messages datframe spliting their categories and adapating format.
+
+    Args:
+    df: pandas DataFrame.  Includes all the messages and their categories before cleaning.
+
+
+    Returns:
+    df: pandas DataFrame.  Includes all the messages and their categories ready to use. 
+    Each category is represented by a column. If the message belongs to a category is 
+    representad by 1 and if not is represented by 0.
+    """
     categories = df.categories.str.split(pat=';', expand=True)
     # select the first row of the categories dataframe
     row = categories.loc[0]
@@ -35,6 +55,14 @@ def clean_data(df):
 
 
 def save_data(df, database_filename):
+    """Saves messages DataFrame to the a table in a sqlite database file.
+    
+    Args:
+    df: pandas DataFrame. Includes all the messages and their categories ready to use. 
+    database_filename: string. The path where the sqlite database file will be saved.
+    
+    Returns: None
+    """
     engine = create_engine('sqlite:///%s' % database_filename)
     df.to_sql('Messages', engine, index=False)  
 
